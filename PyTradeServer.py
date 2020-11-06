@@ -146,9 +146,10 @@ def loadLastArchData(lst_tdc, v_rates, CloseStdLen=2):
 def CandleAlreadyExists(v_rates, rate):
     tf=False
 
-    if (v_rates[-1].date>=rate.date):
-        tf=True
-        return tf 
+    for i in range(0, len(v_rates)):
+        if v_rates[i].date==rate.date and v_rates[i].time==rate.time:
+            tf=True
+            return tf
 
     return tf
 
@@ -208,14 +209,14 @@ def main():
                                 if (int(l1[4])<190000):
                                     rts=rates(int(l1[3]),int(l1[4]), float(l1[5]), float(l1[6]), float(l1[7]), float(l1[8]), float(l1[9]) )
                                     if (not CandleAlreadyExists(v_rates, rts)):
-                                        v_rates_new.append(rts)                                        
+                                        v_rates.append(rts)                                        
                                     #calc_DayStats(v_rates)
                                     #calc_std4Kalman(v_rates, CloseStdLen)       
                                     #calc_movingChange(v_rates)
                                     #calc_stochastic(v_rates, [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17])
                                     #calc_vwap(v_rates)
 
-                                print("Sending back: ", stringdata)
+                                #print("Sending back: ", stringdata)
                                 conn.sendall(str.encode(stringdata))
                                 continue
 
@@ -237,7 +238,7 @@ def main():
                                 conn.sendall(str.encode(stringdata))
                                 continue
 
-                            if (stringdata.find("UpdateCandleOnServer", 0, len(stringdata))>=0):   # Обновление/Актуализация данных по ранее переданной последней свече и/или получение новых
+                            if (stringdata.find("UpdateLastCandleOnServer", 0, len(stringdata))>=0):   # Обновление/Актуализация данных по ранее переданной последней свече и/или получение новых
                                 l1=stringdata.split(',')
                                 if (int(l1[4])<190000):
                                     rts=rates(int(l1[3]),int(l1[4]), float(l1[5]), float(l1[6]), float(l1[7]), float(l1[8]), float(l1[9]) )
@@ -285,37 +286,43 @@ def main():
                                 conn.sendall(str.encode(responce+'\n'))
                                 continue
 
-                            if (stringdata.find("Data_send", 0, len(stringdata))>=0):
-                                conn.sendall(str.encode("Data_received\n"))
-                                print("Send: ", "Data_received")
-                                v_rates=v_rates+v_rates_new
-                                v_rates_new=[]
-                                continue
+                            #if (stringdata.find("Data_send", 0, len(stringdata))>=0):
+                            #    conn.sendall(str.encode("Data_received\n"))
+                            #    print("Send: ", "Data_received")
+                            #    v_rates=v_rates+v_rates_new
+                            #    v_rates_new=[]
+                            #    continue
 
                             if(stringdata.find("GetInstrument", 0, len(stringdata))>=0):
                                 conn.sendall(str.encode(strInstrument+"\n"))                                
                                 continue
 
+                            if(stringdata.find("GetTradeSignal", 0, len(stringdata))>=0):
+                                conn.sendall(str.encode("0"+"\n"))                                
+                                continue
+
                             if (stringdata.find("GetLastCandleParams", 0, len(stringdata))>=0):
                                 res_out=strGetLastCandle(v_rates)
-                                print(res_out)
+                                #print("Sending:", res_out)
                                 conn.sendall(str.encode(res_out))
-                                print("Send: ", res_out)
+                                #print("Send: ", res_out)
 
-                                print(v_rates[0].date, v_rates[0].time, v_rates[0].o, v_rates[0].h, v_rates[0].l, v_rates[0].c)
-                                print(v_rates[dict_last].date, v_rates[dict_last].time, v_rates[dict_last].o, v_rates[dict_last].h, v_rates[dict_last].l, v_rates[dict_last].c)
-                                print(v_rates[dict_last+1].date, v_rates[dict_last+1].time, v_rates[dict_last+1].o, v_rates[dict_last+1].h, v_rates[dict_last+1].l, v_rates[dict_last+1].c)
-                                print(v_rates[-1].date, v_rates[-1].time, v_rates[-1].o, v_rates[-1].h, v_rates[-1].l, v_rates[-1].c)
+                                print(v_rates[0].date, v_rates[0].time, v_rates[0].o, v_rates[0].h, v_rates[0].l, v_rates[0].c, v_rates[0].vol)
+                                print(v_rates[-1].date, v_rates[-1].time, v_rates[-1].o, v_rates[-1].h, v_rates[-1].l, v_rates[-1].c, v_rates[-1].vol)
 
-                                file_1=open('v_rates.out','w')
-                                for i in range(0, len(v_rates)):
-                                    file_1.write("%s, %s, %s, %s, %s, %s\n" % (v_rates[i].date, v_rates[i].time, v_rates[i].o, v_rates[i].h, v_rates[i].l, v_rates[i].c))
-                                file_1.close()
+                                #file_1=open('v_rates.out','a')
+                                #for i in range(0, len(v_rates)):
+                                #    file_1.write("%s, %s, %s, %s, %s, %s\n" % (v_rates[i].date, v_rates[i].time, v_rates[i].o, v_rates[i].h, v_rates[i].l, v_rates[i].c))
+                                #file_1.close()
 
                                 continue
                                                            
                         except:
-                            print("Connection is not alive")
+                            print("Connection is not alive. Cleaning all candles for the current day from server data!")
+                            cur_day=v_rates[-1].date
+
+                            while v_rates[-1].date==cur_day:
+                                v_rates.pop()
                             break
 
 
