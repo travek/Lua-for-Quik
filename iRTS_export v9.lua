@@ -73,22 +73,23 @@ end
 
 function OnInit()
    -- Пытается открыть лог-файл в режиме "чтения/записи"
-   Log = io.open(getScriptPath().."//Log.txt","r+");
+   file_name=os.date('//Log_%y%m%d_%H%M%S.txt')
+   Log = io.open(getScriptPath()..file_name,"r+");
    -- Если файл не существует
    if Log == nil then 
       -- Создает файл в режиме "записи"
-      Log = io.open(getScriptPath().."//Log.txt","w"); 
+      Log = io.open(getScriptPath()..file_name,"w"); 
       -- Закрывает файл
       Log:close();
       -- Открывает уже существующий файл в режиме "чтения/записи"
-      Log = io.open(getScriptPath().."//Log.txt","r+");
+      Log = io.open(getScriptPath()..file_name,"r+");
    end; 
    -- Встает в конец файла
-   Log:seek("end",0);
+   Log:seek("end", 0);
    -- Добавляет пустую строку-разрыв
    Log:write("\n");
    Log:flush();
-   message("Log file open",1)
+   --message("Log file open",1)
    ToLog("Script started! ")
  
    -- Инициализирует генератор
